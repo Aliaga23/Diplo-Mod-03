@@ -1,0 +1,26 @@
+# Dependencias y builds
+node_modules/
+dist/
+.venv/
+__pycache__/
+*.pyc
+bin/
+obj/
+/backend/go-*/bin/
+
+# Configuración local (nunca se versiona; usar .env.example)
+.env
+.env.*
+!.env.example
+
+# Datos generados
+storage/
+*.pdf
+*.log
+
+# Editor / SO
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db

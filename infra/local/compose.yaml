@@ -1,0 +1,35 @@
+# Infraestructura de apoyo SOLO para desarrollo local en Windows.
+# Los 8 servicios NO van en contenedores (v1): se ejecutan nativos con su README.
+# Aquí solo viven PostgreSQL y Mailpit para no instalarlos a mano en la PC.
+#
+#   docker compose -f infra/local/compose.yaml up -d
+#   docker compose -f infra/local/compose.yaml down        # conserva los datos
+#   docker compose -f infra/local/compose.yaml down -v     # borra las bases
+name: entradasya-local
+
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      # 5433 porque el 5432 de esta PC ya lo usa un PostgreSQL nativo
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql
+      - ../postgres/crear-bases.sql:/docker-entrypoint-initdb.d/01-crear-bases.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mailpit:
+    image: axllent/mailpit:v1.33
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # bandeja web: http://localhost:8025
+
+volumes:
+  pgdata:

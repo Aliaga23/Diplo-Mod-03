@@ -41,6 +41,7 @@ export function EventSalesPage() {
         <KpiCard
           label="Recaudado"
           icon={CoinsIcon}
+          accent
           loading={sales.isPending}
           value={sales.error ? '—' : formatMoney(sales.data?.revenue ?? 0)}
           hint="Suma de las compras pagadas"

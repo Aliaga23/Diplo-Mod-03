@@ -163,6 +163,7 @@ function CheckinDesk({ eventId }: { eventId: string }) {
           loading={summary.isPending}
           value={summary.error ? '—' : (summary.data?.entries ?? 0)}
           hint="En este evento"
+          accent
         />
       </div>
 

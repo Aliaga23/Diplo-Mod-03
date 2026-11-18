@@ -156,6 +156,19 @@
   .tabular {
     font-variant-numeric: tabular-nums;
   }
+  /* Cuadrícula de líneas: oscura sobre paneles navy, clara sobre el fondo. */
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, oklch(1 0 0 / 5%) 1px, transparent 1px),
+      linear-gradient(to bottom, oklch(1 0 0 / 5%) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+  .bg-grid-light {
+    background-image:
+      linear-gradient(to right, oklch(0.5 0.02 260 / 7%) 1px, transparent 1px),
+      linear-gradient(to bottom, oklch(0.5 0.02 260 / 7%) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
 }
 
 /*

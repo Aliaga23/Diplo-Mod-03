@@ -1,4 +1,4 @@
-import { CalendarBlankIcon, ImageIcon, MapPinIcon } from '@phosphor-icons/react'
+import { CalendarBlankIcon, MapPinIcon, TicketIcon } from '@phosphor-icons/react'
 import { Link } from 'react-router'
 
 import { StatusPill } from '@/components/common/status-badge'
@@ -11,9 +11,26 @@ export function EventImage({ event, className }: { event: EventItem; className?:
   if (event.imageUrl) {
     return <img src={event.imageUrl} alt="" className={className} loading="lazy" />
   }
+  // Sin imagen: portada navy con la cuadrícula de líneas y la fecha destacada.
+  const date = new Date(event.date)
   return (
-    <div className={`flex items-center justify-center bg-muted text-muted-foreground ${className ?? ''}`}>
-      <ImageIcon weight="duotone" className="size-8" />
+    <div
+      className={`relative overflow-hidden bg-[oklch(0.17_0.02_264)] text-white dark:bg-[oklch(0.22_0.03_264)] ${className ?? ''}`}
+    >
+      <div aria-hidden className="bg-grid absolute inset-0" />
+      <div className="relative flex h-full flex-col justify-between p-4">
+        <div className="flex size-9 items-center justify-center rounded-lg border border-white/10 bg-white/5">
+          <TicketIcon weight="duotone" className="size-5 text-[oklch(0.75_0.14_250)]" />
+        </div>
+        <div className="leading-none">
+          <div className="text-4xl font-semibold tracking-tight tabular">
+            {date.toLocaleDateString('es', { day: '2-digit' })}
+          </div>
+          <div className="mt-1 text-xs font-medium tracking-wider text-white/60 uppercase">
+            {date.toLocaleDateString('es', { month: 'long', year: 'numeric' })}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

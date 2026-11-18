@@ -75,13 +75,16 @@ En desarrollo, el proxy de `vite.config.ts` reproduce exactamente esas mismas re
 
 ## 6. Rutas
 
-| Ruta | Acceso |
-|---|---|
-| `/login`, `/registro` | público |
-| `/` (cartelera), `/eventos/:id` | público. Para comprar hace falta una sesión de cliente |
-| `/mis-compras`, `/mis-entradas` | cliente |
-| `/organizador/eventos`, `/organizador/eventos/nuevo`, `/organizador/eventos/:id/editar`, `/organizador/eventos/:id/ventas` | organizador |
-| `/porteria` | portero |
+| Ruta | Acceso | Layout |
+|---|---|---|
+| `/` (landing), `/eventos` (cartelera con búsqueda), `/eventos/:id` | público. Para comprar hace falta una sesión de cliente | sitio público |
+| `/mis-entradas` (entradas con QR en pantalla), `/mis-compras` | cliente | sitio público |
+| `/login`, `/registro` | público | pantalla dividida |
+| `/organizador/eventos`, `/organizador/eventos/nuevo`, `/organizador/eventos/:id/editar`, `/organizador/eventos/:id/ventas` | organizador | panel con sidebar |
+| `/porteria` | portero | panel con sidebar |
+
+El **sitio público** (barra superior, contenido y pie, sin sidebar) es lo que ven los visitantes y clientes.
+El **panel** con sidebar queda solo para quienes trabajan en el evento: organizador y portero.
 
 El control de rutas por rol (`RequireRole`) es solo de navegación. **La autorización real la hace cada
 servicio** al validar el JWT.
@@ -99,8 +102,8 @@ src/
 │  └─ types.ts          tipos del contrato de API
 ├─ components/
 │  ├─ ui/               componentes shadcn (generados con la CLI)
-│  ├─ layout/           AppShell: sidebar, barra superior, menú por rol, RequireRole
-│  └─ common/           PageHeader, KpiCard, StatusBadge, estados vacío/carga/error, logo
+│  ├─ layout/           SiteLayout (barra superior + pie del sitio público), AppShell (panel con sidebar), RequireRole
+│  └─ common/           PageHeader, KpiCard, StatusBadge, ThemeToggle, estados vacío/carga/error, logo
 └─ features/<módulo>/   un módulo por funcionalidad
    ├─ api.ts            llamadas al servicio + hooks de React Query + esquemas zod
    ├─ components/       piezas propias del módulo
@@ -110,6 +113,7 @@ src/
 | Módulo | Servicio que consume |
 |---|---|
 | `auth` | auth |
+| `landing` | events (próximos eventos de la portada) |
 | `cartelera` | events |
 | `compras` | orders |
 | `entradas` | tickets |
@@ -123,6 +127,8 @@ src/
   - Paleta en tokens oklch (neutros slate, un azul primario, sidebar navy), Geist y `--radius: 0.55rem`.
   - Las tarjetas usan un borde de 1 px (`ring`) en lugar de sombra.
   - Los estados se muestran con píldoras de color suave.
+  - Bandas navy con cuadrícula de líneas en la portada, la cartelera y el detalle del evento.
+  - Las entradas tienen forma de ticket, con perforación y QR (`qrcode.react`).
 - **Sin animaciones ni degradados.**
   - No se instala `tw-animate-css`.
   - Se quitaron las clases `animate-*` y `transition-*` de los componentes.

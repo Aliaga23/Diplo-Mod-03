@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { WarningCircleIcon } from '@phosphor-icons/react'
 import { useForm } from 'react-hook-form'
-import { Link, Navigate, useNavigate } from 'react-router'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router'
 import { toast } from 'sonner'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -16,6 +16,7 @@ import { errorMessage } from '@/lib/http'
 export function RegisterPage() {
   const session = useSession()
   const navigate = useNavigate()
+  const from = (useLocation().state as { from?: string } | null)?.from
   const register = useRegister()
   const form = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
@@ -28,7 +29,7 @@ export function RegisterPage() {
     register.mutate(values, {
       onSuccess: (res) => {
         toast.success(`Bienvenido, ${res.user.name}`)
-        navigate('/', { replace: true })
+        navigate(from ?? '/', { replace: true })
       },
     }),
   )

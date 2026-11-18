@@ -1,7 +1,7 @@
-import { MoonIcon, SunIcon } from '@phosphor-icons/react'
 import { Fragment } from 'react'
 import { Link, useLocation } from 'react-router'
 
+import { ThemeToggle } from '@/components/common/theme-toggle'
 import { CRUMBS } from '@/components/layout/nav'
 import {
   Breadcrumb,
@@ -11,31 +11,13 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
-import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { SidebarTrigger } from '@/components/ui/sidebar'
-import { themeStore, useTheme } from '@/lib/theme'
 
 /** Segmentos intermedios de la miga de pan que tienen una página propia. */
 const LINKS: Record<string, string> = {
-  '/eventos': '/',
   '/organizador': '/organizador/eventos',
   '/organizador/eventos': '/organizador/eventos',
-}
-
-function ThemeToggle() {
-  const theme = useTheme()
-  const next = theme === 'dark' ? 'light' : 'dark'
-  return (
-    <Button
-      variant="ghost"
-      size="icon"
-      aria-label={theme === 'dark' ? 'Usar tema claro' : 'Usar tema oscuro'}
-      onClick={() => themeStore.set(next)}
-    >
-      {theme === 'dark' ? <SunIcon className="size-[18px]" /> : <MoonIcon className="size-[18px]" />}
-    </Button>
-  )
 }
 
 export function AppHeader() {

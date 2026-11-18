@@ -32,6 +32,10 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
+  --color-ink: oklch(0.13 0.015 264);
+  --color-ink-soft: oklch(0.17 0.02 264);
+  --color-ink-line: oklch(1 0 0 / 10%);
+  --color-highlight: oklch(0.75 0.14 250);
   --color-brand: var(--brand);
   --color-brand-soft: var(--brand-soft);
   --color-ring: var(--ring);

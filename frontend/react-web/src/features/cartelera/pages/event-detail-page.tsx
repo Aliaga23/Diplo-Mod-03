@@ -1,90 +1,102 @@
-import { CalendarBlankIcon, MapPinIcon } from '@phosphor-icons/react'
-import { useParams } from 'react-router'
+import { ArrowLeftIcon, CalendarBlankIcon, ClockIcon, MapPinIcon, TicketIcon } from '@phosphor-icons/react'
+import { Link, useParams } from 'react-router'
 
-import { PageHeader } from '@/components/common/page-header'
 import { ErrorState } from '@/components/common/query-state'
-import { StatusPill } from '@/components/common/status-badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { EventStatusBadge, StatusPill } from '@/components/common/status-badge'
+import { SiteBand, SiteContainer } from '@/components/layout/site-layout'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { useEvent } from '@/features/cartelera/api'
-import { EventImage } from '@/features/cartelera/components/event-card'
-import { PurchaseCard } from '@/features/compras/components/purchase-card'
-import { formatDateLong, formatMoney } from '@/lib/format'
+import { minPrice, totalAvailable, useEvent } from '@/features/cartelera/api'
+import { EventCover } from '@/features/cartelera/components/event-cover'
+import { PurchaseSection } from '@/features/compras/components/purchase-section'
+import { formatMoney, formatTime } from '@/lib/format'
 
 export function EventDetailPage() {
   const { id } = useParams()
   const { data: event, isPending, error } = useEvent(id)
 
-  if (error) return <ErrorState error={error} title="No se encontró el evento" />
-  if (isPending) {
+  if (error) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-10 w-1/2" />
-        <Skeleton className="h-80 w-full rounded-xl" />
-      </div>
+      <SiteContainer className="py-16">
+        <ErrorState error={error} title="No se encontró el evento" />
+      </SiteContainer>
     )
   }
 
+  if (isPending) {
+    return (
+      <>
+        <div className="h-[380px] bg-ink" />
+        <SiteContainer className="grid gap-6 py-12 lg:grid-cols-[1fr_380px]">
+          <Skeleton className="h-64 rounded-2xl" />
+          <Skeleton className="h-80 rounded-2xl" />
+        </SiteContainer>
+      </>
+    )
+  }
+
+  const price = minPrice(event)
+  const available = totalAvailable(event)
+
   return (
     <>
-      <PageHeader eyebrow="Evento" title={event.name} />
-      <div className="grid gap-4 xl:grid-cols-[1fr_380px]">
-        <div className="space-y-4">
-          <Card className="gap-0 py-0">
-            <EventImage event={event} className="aspect-[21/9] w-full object-cover" />
-            <CardContent className="space-y-4 py-5">
-              <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
-                <span className="flex items-center gap-2">
-                  <CalendarBlankIcon className="size-4" />
-                  <span className="first-letter:uppercase">{formatDateLong(event.date)}</span>
-                </span>
-                <span className="flex items-center gap-2">
-                  <MapPinIcon className="size-4" />
-                  {event.venue}
-                </span>
-              </div>
-              <p className="text-sm leading-relaxed whitespace-pre-line">{event.description}</p>
-            </CardContent>
-          </Card>
-
-          <Card className="gap-0 overflow-hidden py-0">
-            <CardHeader className="border-b py-4">
-              <CardTitle>Sectores</CardTitle>
-            </CardHeader>
-            <Table>
-              <TableHeader className="bg-muted/40">
-                <TableRow>
-                  <TableHead className="pl-4">Sector</TableHead>
-                  <TableHead className="text-right">Precio</TableHead>
-                  <TableHead className="text-right">Disponibles</TableHead>
-                  <TableHead className="pr-4 text-right">Estado</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {event.sectors.map((s) => (
-                  <TableRow key={s.id}>
-                    <TableCell className="py-3 pl-4 font-medium">{s.name}</TableCell>
-                    <TableCell className="text-right tabular">{formatMoney(s.price)}</TableCell>
-                    <TableCell className="text-right tabular">
-                      {s.available} / {s.capacity}
-                    </TableCell>
-                    <TableCell className="pr-4 text-right">
-                      {s.available === 0 ? (
-                        <StatusPill tone="danger">Agotado</StatusPill>
-                      ) : (
-                        <StatusPill tone="success">Disponible</StatusPill>
-                      )}
-                    </TableCell>
-                  </TableRow>
+      <SiteBand>
+        <SiteContainer className="grid items-center gap-10 py-12 md:py-16 lg:grid-cols-[1.2fr_1fr]">
+          <div className="space-y-6">
+            <Link to="/eventos" className="inline-flex items-center gap-2 text-sm text-white/60 hover:text-white">
+              <ArrowLeftIcon className="size-4" />
+              Todos los eventos
+            </Link>
+            <div className="flex flex-wrap items-center gap-2">
+              {event.status !== 'publicado' && <EventStatusBadge status={event.status} />}
+              {event.status === 'publicado' &&
+                (available === 0 ? (
+                  <StatusPill tone="danger" className="bg-white">Agotado</StatusPill>
+                ) : (
+                  <StatusPill tone="success" className="bg-white">Entradas disponibles</StatusPill>
                 ))}
-              </TableBody>
-            </Table>
-          </Card>
-        </div>
+            </div>
+            <h1 className="text-4xl leading-[1.05] font-semibold tracking-tight text-balance md:text-5xl">{event.name}</h1>
+            <dl className="flex flex-wrap gap-x-8 gap-y-4 text-sm">
+              {[
+                { icon: CalendarBlankIcon, label: 'Fecha', value: new Date(event.date).toLocaleDateString('es', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) },
+                { icon: ClockIcon, label: 'Hora', value: formatTime(event.date) },
+                { icon: MapPinIcon, label: 'Lugar', value: event.venue },
+              ].map((d) => (
+                <div key={d.label} className="flex gap-3">
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5">
+                    <d.icon weight="duotone" className="size-[18px] text-highlight" />
+                  </div>
+                  <div className="min-w-0">
+                    <dt className="text-xs text-white/50">{d.label}</dt>
+                    <dd className="font-medium first-letter:uppercase">{d.value}</dd>
+                  </div>
+                </div>
+              ))}
+            </dl>
+            {price !== null && (
+              <div className="flex items-center gap-2 text-white/70">
+                <TicketIcon weight="duotone" className="size-5 text-highlight" />
+                Entradas desde <span className="font-semibold text-white tabular">{formatMoney(price)}</span>
+              </div>
+            )}
+          </div>
+          <EventCover event={event} className="aspect-[16/10] w-full rounded-2xl ring-1 ring-white/10" />
+        </SiteContainer>
+      </SiteBand>
 
-        <PurchaseCard event={event} />
-      </div>
+      <SiteContainer className="py-12 md:py-16">
+        <PurchaseSection
+          event={event}
+          about={
+            <section className="space-y-4">
+              <h2 className="text-2xl font-semibold tracking-tight">Acerca del evento</h2>
+              <p className="max-w-3xl leading-relaxed whitespace-pre-line text-muted-foreground">
+                {event.description || 'El organizador no agregó una descripción.'}
+              </p>
+            </section>
+          }
+        />
+      </SiteContainer>
     </>
   )
 }

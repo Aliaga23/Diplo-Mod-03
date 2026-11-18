@@ -1,11 +1,4 @@
-import {
-  CalendarDotsIcon,
-  ChartBarIcon,
-  QrCodeIcon,
-  ReceiptIcon,
-  TicketIcon,
-  type Icon,
-} from '@phosphor-icons/react'
+import { ChartBarIcon, GlobeHemisphereWestIcon, QrCodeIcon, type Icon } from '@phosphor-icons/react'
 
 import type { Role } from '@/lib/types'
 
@@ -21,37 +14,26 @@ export interface NavGroup {
   items: NavItem[]
 }
 
-const CARTELERA: NavGroup = {
-  label: 'Explorar',
-  items: [{ title: 'Cartelera', href: '/', icon: CalendarDotsIcon, exact: true }],
+const SITIO: NavGroup = {
+  label: 'Sitio',
+  items: [{ title: 'Ver sitio público', href: '/', icon: GlobeHemisphereWestIcon, exact: true }],
 }
 
-/** Menú lateral según el rol de la sesión (sin sesión: solo la cartelera). */
+/** Menú lateral del panel de trabajo (solo organizador y portero; el cliente usa el sitio público). */
 export function navFor(role: Role | undefined): NavGroup[] {
   switch (role) {
-    case 'cliente':
-      return [
-        CARTELERA,
-        {
-          label: 'Mi cuenta',
-          items: [
-            { title: 'Mis compras', href: '/mis-compras', icon: ReceiptIcon },
-            { title: 'Mis entradas', href: '/mis-entradas', icon: TicketIcon },
-          ],
-        },
-      ]
     case 'organizador':
       return [
         {
           label: 'Organizador',
           items: [{ title: 'Mis eventos', href: '/organizador/eventos', icon: ChartBarIcon }],
         },
-        CARTELERA,
+        SITIO,
       ]
     case 'portero':
-      return [{ label: 'Puerta', items: [{ title: 'Control de ingreso', href: '/porteria', icon: QrCodeIcon }] }]
+      return [{ label: 'Puerta', items: [{ title: 'Control de ingreso', href: '/porteria', icon: QrCodeIcon }] }, SITIO]
     default:
-      return [CARTELERA]
+      return [SITIO]
   }
 }
 

@@ -1,21 +1,21 @@
-import { DownloadSimpleIcon, TicketIcon } from '@phosphor-icons/react'
+import { TicketIcon } from '@phosphor-icons/react'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { toast } from 'sonner'
 
-import { PageHeader } from '@/components/common/page-header'
-import { EmptyState, ErrorState, LoadingRows } from '@/components/common/query-state'
-import { StatusPill } from '@/components/common/status-badge'
+import { EmptyState, ErrorState } from '@/components/common/query-state'
+import { AccountHeader } from '@/features/entradas/components/account-header'
+import { SiteContainer } from '@/components/layout/site-layout'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Skeleton } from '@/components/ui/skeleton'
 import { downloadTicketPdf, useMyTickets } from '@/features/entradas/api'
-import { formatDateTime } from '@/lib/format'
+import { TicketCard } from '@/features/entradas/components/ticket-card'
 import { errorMessage } from '@/lib/http'
 
 export function MyTicketsPage() {
   const { data, isPending, error } = useMyTickets()
   const [downloading, setDownloading] = useState<string | null>(null)
+  const tickets = data ? [...data].sort((a, b) => a.eventDate.localeCompare(b.eventDate)) : []
 
   async function download(code: string) {
     setDownloading(code)
@@ -30,65 +30,34 @@ export function MyTicketsPage() {
 
   return (
     <>
-      <PageHeader
-        eyebrow="Mi cuenta"
+      <AccountHeader
+        active="entradas"
         title="Mis entradas"
-        description="Cada entrada tiene un código QR único. Preséntalo en la puerta; solo se puede usar una vez."
+        description="Presenta el QR en la puerta desde tu teléfono o el PDF impreso. Cada entrada se usa una sola vez."
       />
-      {error ? (
-        <ErrorState error={error} />
-      ) : !isPending && data.length === 0 ? (
-        <EmptyState icon={TicketIcon} title="Aún no tienes entradas" description="Las entradas aparecen aquí después de una compra pagada.">
-          <Button asChild variant="outline">
-            <Link to="/">Ver cartelera</Link>
-          </Button>
-        </EmptyState>
-      ) : (
-        <Card className="gap-0 overflow-hidden py-0">
-          {isPending ? (
-            <LoadingRows />
-          ) : (
-            <Table>
-              <TableHeader className="bg-muted/40">
-                <TableRow>
-                  <TableHead className="pl-4">Código</TableHead>
-                  <TableHead>Evento</TableHead>
-                  <TableHead>Fecha del evento</TableHead>
-                  <TableHead>Lugar</TableHead>
-                  <TableHead>Sector</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="pr-4 text-right">PDF</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.map((t) => (
-                  <TableRow key={t.code}>
-                    <TableCell className="py-3 pl-4 font-mono text-xs">{t.code}</TableCell>
-                    <TableCell className="font-medium">{t.eventName}</TableCell>
-                    <TableCell className="font-mono text-xs">{formatDateTime(t.eventDate)}</TableCell>
-                    <TableCell>{t.venue}</TableCell>
-                    <TableCell>{t.sectorName}</TableCell>
-                    <TableCell>
-                      <StatusPill tone="success">Válida</StatusPill>
-                    </TableCell>
-                    <TableCell className="pr-4 text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={downloading === t.code}
-                        onClick={() => void download(t.code)}
-                      >
-                        <DownloadSimpleIcon />
-                        {downloading === t.code ? 'Descargando…' : 'Descargar'}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </Card>
-      )}
+      <SiteContainer className="py-10">
+        {error ? (
+          <ErrorState error={error} />
+        ) : isPending ? (
+          <div className="grid gap-5 xl:grid-cols-2">
+            {Array.from({ length: 2 }, (_, i) => (
+              <Skeleton key={i} className="h-60 rounded-2xl" />
+            ))}
+          </div>
+        ) : tickets.length === 0 ? (
+          <EmptyState icon={TicketIcon} title="Aún no tienes entradas" description="Las entradas aparecen aquí después de una compra pagada.">
+            <Button asChild>
+              <Link to="/eventos">Explorar eventos</Link>
+            </Button>
+          </EmptyState>
+        ) : (
+          <div className="grid gap-5 xl:grid-cols-2">
+            {tickets.map((t) => (
+              <TicketCard key={t.code} ticket={t} downloading={downloading === t.code} onDownload={() => void download(t.code)} />
+            ))}
+          </div>
+        )}
+      </SiteContainer>
     </>
   )
 }

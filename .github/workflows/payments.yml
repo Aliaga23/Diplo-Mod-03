@@ -1,0 +1,56 @@
+# Pipeline de payments: cada push a main que toque backend/go-payments lo despliega en el servidor Ubuntu.
+# Corre en el runner self-hosted instalado en la VM (ver docs/servidor-ubuntu.md, paso 8).
+name: deploy-payments
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/go-payments/**"
+      - ".github/workflows/payments.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-payments
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, linux, entradasya]
+    env:
+      APP_DIR: /opt/entradasya/payments
+      ENV_FILE: /etc/entradasya/payments.env
+    defaults:
+      run:
+        shell: bash
+        working-directory: backend/go-payments
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Verificar y compilar
+        run: |
+          go vet ./...
+          go build -trimpath -o "$RUNNER_TEMP/payments" ./cmd/payments
+
+      - name: Migraciones
+        run: |
+          set -a; source "$ENV_FILE"; set +a
+          go tool goose -dir migrations postgres "$DATABASE_URL" up
+
+      - name: Publicar en $APP_DIR
+        run: install -m 755 "$RUNNER_TEMP/payments" "$APP_DIR/payments"
+
+      - name: Reiniciar el servicio
+        run: sudo systemctl restart entradasya-payments
+
+      - name: Verificar salud
+        run: |
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:4004/health/ready && exit 0
+            sleep 1
+          done
+          journalctl -u entradasya-payments -n 50 --no-pager
+          exit 1

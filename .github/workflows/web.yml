@@ -1,0 +1,40 @@
+# Pipeline de web: cada push a main que toque frontend/react-web publica la app en Nginx.
+# Corre en el runner self-hosted instalado en la VM (ver docs/servidor-ubuntu.md, paso 8).
+name: deploy-web
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "frontend/react-web/**"
+      - ".github/workflows/web.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-web
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, linux, entradasya]
+    defaults:
+      run:
+        shell: bash
+        working-directory: frontend/react-web
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Instalar y compilar
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      - name: Publicar en Nginx
+        run: rsync -a --delete dist/ /var/www/entradasya/
+
+      - name: Verificar
+        run: curl -fsS http://127.0.0.1/ | grep -q '<div id="root">'

@@ -1,0 +1,58 @@
+# Pipeline de events: cada push a main que toque backend/python-events lo despliega en el servidor Ubuntu.
+# Corre en el runner self-hosted instalado en la VM (ver docs/servidor-ubuntu.md, paso 8).
+name: deploy-events
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/python-events/**"
+      - ".github/workflows/events.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-events
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, linux, entradasya]
+    env:
+      APP_DIR: /opt/entradasya/events
+      ENV_FILE: /etc/entradasya/events.env
+      UV_LINK_MODE: copy
+    defaults:
+      run:
+        shell: bash
+        working-directory: backend/python-events
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Lint
+        run: uvx ruff check .
+
+      - name: Publicar en $APP_DIR e instalar dependencias
+        run: |
+          rsync -a --delete --exclude .venv --exclude .env --exclude storage ./ "$APP_DIR/"
+          cd "$APP_DIR" && uv sync --frozen --no-dev
+
+      - name: Migraciones
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set -a; source "$ENV_FILE"; set +a
+          uv run --no-sync alembic upgrade head
+
+      - name: Reiniciar el servicio
+        run: sudo systemctl restart entradasya-events
+
+      - name: Verificar salud
+        run: |
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:4002/health/ready && exit 0
+            sleep 1
+          done
+          journalctl -u entradasya-events -n 50 --no-pager
+          exit 1

@@ -1,0 +1,30 @@
+# EntradasYa · servicio orders (.NET 10)
+# Instalar: sudo cp infra/systemd/entradasya-orders.service /etc/systemd/system/
+#           sudo systemctl daemon-reload && sudo systemctl enable --now entradasya-orders
+[Unit]
+Description=EntradasYa orders (.NET 10)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=entradasya
+Group=entradasya
+WorkingDirectory=/opt/entradasya/orders
+# Toda la configuración viene de aquí (puertos, BD, secretos). No se versiona.
+EnvironmentFile=/etc/entradasya/orders.env
+ExecStart=/usr/bin/dotnet Orders.dll
+Restart=on-failure
+RestartSec=3
+# Los logs van a la consola → journald:  journalctl -u entradasya-orders -f
+StandardOutput=journal
+StandardError=journal
+Environment=DOTNET_CLI_TELEMETRY_OPTOUT=1
+# Endurecimiento básico
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

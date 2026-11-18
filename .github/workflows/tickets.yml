@@ -1,0 +1,58 @@
+# Pipeline de tickets: cada push a main que toque backend/python-tickets lo despliega en el servidor Ubuntu.
+# Corre en el runner self-hosted instalado en la VM (ver docs/servidor-ubuntu.md, paso 8).
+name: deploy-tickets
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/python-tickets/**"
+      - ".github/workflows/tickets.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-tickets
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, linux, entradasya]
+    env:
+      APP_DIR: /opt/entradasya/tickets
+      ENV_FILE: /etc/entradasya/tickets.env
+      UV_LINK_MODE: copy
+    defaults:
+      run:
+        shell: bash
+        working-directory: backend/python-tickets
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Lint
+        run: uvx ruff check .
+
+      - name: Publicar en $APP_DIR e instalar dependencias
+        run: |
+          rsync -a --delete --exclude .venv --exclude .env --exclude storage ./ "$APP_DIR/"
+          cd "$APP_DIR" && uv sync --frozen --no-dev
+
+      - name: Migraciones
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set -a; source "$ENV_FILE"; set +a
+          uv run --no-sync alembic upgrade head
+
+      - name: Reiniciar el servicio
+        run: sudo systemctl restart entradasya-tickets
+
+      - name: Verificar salud
+        run: |
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:4005/health/ready && exit 0
+            sleep 1
+          done
+          journalctl -u entradasya-tickets -n 50 --no-pager
+          exit 1

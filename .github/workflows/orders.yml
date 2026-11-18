@@ -1,0 +1,56 @@
+# Pipeline de orders: cada push a main que toque backend/dotnet-orders lo despliega en el servidor Ubuntu.
+# Corre en el runner self-hosted instalado en la VM (ver docs/servidor-ubuntu.md, paso 8).
+name: deploy-orders
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/dotnet-orders/**"
+      - ".github/workflows/orders.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-orders
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, linux, entradasya]
+    env:
+      APP_DIR: /opt/entradasya/orders
+      ENV_FILE: /etc/entradasya/orders.env
+    defaults:
+      run:
+        shell: bash
+        working-directory: backend/dotnet-orders
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Compilar y publicar
+        run: dotnet publish -c Release -o "$RUNNER_TEMP/orders"
+
+      - name: Migraciones (EF Core bundle)
+        run: |
+          dotnet tool restore
+          dotnet ef migrations bundle --force -o "$RUNNER_TEMP/efbundle"
+          set -a; source "$ENV_FILE"; set +a
+          "$RUNNER_TEMP/efbundle"
+
+      - name: Publicar en $APP_DIR
+        run: rsync -a --delete "$RUNNER_TEMP/orders/" "$APP_DIR/"
+
+      - name: Reiniciar el servicio
+        run: sudo systemctl restart entradasya-orders
+
+      - name: Verificar salud
+        run: |
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:4003/health/ready && exit 0
+            sleep 1
+          done
+          journalctl -u entradasya-orders -n 50 --no-pager
+          exit 1

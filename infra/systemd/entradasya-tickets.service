@@ -1,0 +1,31 @@
+# EntradasYa · servicio tickets (Python)
+# Instalar: sudo cp infra/systemd/entradasya-tickets.service /etc/systemd/system/
+#           sudo systemctl daemon-reload && sudo systemctl enable --now entradasya-tickets
+[Unit]
+Description=EntradasYa tickets (Python)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=entradasya
+Group=entradasya
+WorkingDirectory=/opt/entradasya/tickets
+# Toda la configuración viene de aquí (puertos, BD, secretos). No se versiona.
+EnvironmentFile=/etc/entradasya/tickets.env
+ExecStart=/opt/entradasya/tickets/.venv/bin/python -m app
+Restart=on-failure
+RestartSec=3
+# Los logs van a la consola → journald:  journalctl -u entradasya-tickets -f
+StandardOutput=journal
+StandardError=journal
+# Carpeta local de los PDF (TICKETS_DIR); única ruta escribible además de /tmp
+ReadWritePaths=/var/lib/entradasya/tickets
+# Endurecimiento básico
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

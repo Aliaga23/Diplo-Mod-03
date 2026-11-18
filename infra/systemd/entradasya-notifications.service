@@ -1,0 +1,30 @@
+# EntradasYa · servicio notifications (Node.js)
+# Instalar: sudo cp infra/systemd/entradasya-notifications.service /etc/systemd/system/
+#           sudo systemctl daemon-reload && sudo systemctl enable --now entradasya-notifications
+[Unit]
+Description=EntradasYa notifications (Node.js)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=entradasya
+Group=entradasya
+WorkingDirectory=/opt/entradasya/notifications
+# Toda la configuración viene de aquí (puertos, BD, secretos). No se versiona.
+EnvironmentFile=/etc/entradasya/notifications.env
+ExecStart=/usr/bin/node src/server.ts
+Restart=on-failure
+RestartSec=3
+# Los logs van a la consola → journald:  journalctl -u entradasya-notifications -f
+StandardOutput=journal
+StandardError=journal
+
+# Endurecimiento básico
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

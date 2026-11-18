@@ -1,0 +1,30 @@
+# EntradasYa · servicio checkin (Go)
+# Instalar: sudo cp infra/systemd/entradasya-checkin.service /etc/systemd/system/
+#           sudo systemctl daemon-reload && sudo systemctl enable --now entradasya-checkin
+[Unit]
+Description=EntradasYa checkin (Go)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=entradasya
+Group=entradasya
+WorkingDirectory=/opt/entradasya/checkin
+# Toda la configuración viene de aquí (puertos, BD, secretos). No se versiona.
+EnvironmentFile=/etc/entradasya/checkin.env
+ExecStart=/opt/entradasya/checkin/checkin
+Restart=on-failure
+RestartSec=3
+# Los logs van a la consola → journald:  journalctl -u entradasya-checkin -f
+StandardOutput=journal
+StandardError=journal
+
+# Endurecimiento básico
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

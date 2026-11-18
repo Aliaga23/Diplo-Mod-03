@@ -1,0 +1,30 @@
+# EntradasYa · servicio auth (Node.js)
+# Instalar: sudo cp infra/systemd/entradasya-auth.service /etc/systemd/system/
+#           sudo systemctl daemon-reload && sudo systemctl enable --now entradasya-auth
+[Unit]
+Description=EntradasYa auth (Node.js)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=entradasya
+Group=entradasya
+WorkingDirectory=/opt/entradasya/auth
+# Toda la configuración viene de aquí (puertos, BD, secretos). No se versiona.
+EnvironmentFile=/etc/entradasya/auth.env
+ExecStart=/usr/bin/node src/server.ts
+Restart=on-failure
+RestartSec=3
+# Los logs van a la consola → journald:  journalctl -u entradasya-auth -f
+StandardOutput=journal
+StandardError=journal
+
+# Endurecimiento básico
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

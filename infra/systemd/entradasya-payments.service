@@ -1,0 +1,30 @@
+# EntradasYa · servicio payments (Go)
+# Instalar: sudo cp infra/systemd/entradasya-payments.service /etc/systemd/system/
+#           sudo systemctl daemon-reload && sudo systemctl enable --now entradasya-payments
+[Unit]
+Description=EntradasYa payments (Go)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=entradasya
+Group=entradasya
+WorkingDirectory=/opt/entradasya/payments
+# Toda la configuración viene de aquí (puertos, BD, secretos). No se versiona.
+EnvironmentFile=/etc/entradasya/payments.env
+ExecStart=/opt/entradasya/payments/payments
+Restart=on-failure
+RestartSec=3
+# Los logs van a la consola → journald:  journalctl -u entradasya-payments -f
+StandardOutput=journal
+StandardError=journal
+
+# Endurecimiento básico
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

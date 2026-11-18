@@ -1,0 +1,60 @@
+# Pipeline de auth: cada push a main que toque backend/node-auth lo despliega en el servidor Ubuntu.
+# Corre en el runner self-hosted instalado en la VM (ver docs/servidor-ubuntu.md, paso 8).
+name: deploy-auth
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/node-auth/**"
+      - ".github/workflows/auth.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-auth
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, linux, entradasya]
+    env:
+      APP_DIR: /opt/entradasya/auth
+      ENV_FILE: /etc/entradasya/auth.env
+    defaults:
+      run:
+        shell: bash
+        working-directory: backend/node-auth
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Instalar dependencias y verificar tipos
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+          pnpm typecheck
+
+      - name: Publicar en $APP_DIR
+        run: |
+          rsync -a --delete --exclude node_modules --exclude .env ./ "$APP_DIR/"
+          cd "$APP_DIR" && pnpm install --frozen-lockfile --prod
+
+      - name: Migraciones
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set -a; source "$ENV_FILE"; set +a
+          node src/scripts/migrate.ts
+
+      - name: Reiniciar el servicio
+        run: sudo systemctl restart entradasya-auth
+
+      - name: Verificar salud
+        run: |
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:4001/health/ready && exit 0
+            sleep 1
+          done
+          journalctl -u entradasya-auth -n 50 --no-pager
+          exit 1
